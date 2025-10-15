@@ -1,3 +1,5 @@
+Step 3: Styling and utility functions:
+
 %%writefile app.py
 import streamlit as st
 import json
