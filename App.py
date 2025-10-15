@@ -1,22 +1,31 @@
+%%writefile app.py
 import streamlit as st
 import json
 import re
 from PIL import Image
 import requests
 from io import BytesIO
+import os
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="🧠 Visual Product Matcher", layout="centered", page_icon="🛍️")
 
-# ---------- LOAD DATA WITH ERROR HANDLING ----------
-try:
-    with open("products.json", "r") as f:
-        products = json.load(f)
-except FileNotFoundError:
-    st.error("❌ products.json not found! Make sure it is in the same folder as app.py.")
+# ---------- LOCATE AND LOAD PRODUCTS.JSON ----------
+json_path = "products.json"
+
+if not os.path.exists(json_path):
+    st.error(
+        "❌ products.json not found!\n\n"
+        "Make sure `products.json` is in the **same folder as `app.py`**.\n"
+        "If you don’t have it, you can create one with fields: `name`, `image`, `tags`, `price`."
+    )
     st.stop()
+
+try:
+    with open(json_path, "r") as f:
+        products = json.load(f)
 except json.JSONDecodeError:
-    st.error("❌ products.json is not a valid JSON file. Check the format.")
+    st.error("❌ products.json is not valid JSON. Please check the format.")
     st.stop()
 
 # ---------- STYLING ----------
