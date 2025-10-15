@@ -1,3 +1,5 @@
+Step 2: Upload a Product.json Dataset File:
+
 %%writefile products.json
 [
   { "id": 1, "name": "Bag", "image": "https://res.cloudinary.com/dwwpw0yjo/image/upload/v1756624746/bag_rsttct.jpg", "tags": ["bag", "fashion", "accessory"], "price": "₹1,200" },
