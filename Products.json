@@ -1,4 +1,4 @@
-Step 2: Upload a Product.json Dataset File:
+Step 2 : Upload a Product.json Dataset File:
 
 %%writefile products.json
 [
