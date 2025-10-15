@@ -1,4 +1,11 @@
 
+## 🌐 Live Demo
+
+Check out the live version of **Visual Product Matching** here:  
+
+[🔗 Open Live App](https://visual-appuct-matcher-msgomszvqtdppghkdjabdl.streamlit.app/)
+
+
 # 🛍️ ProductMatch – Smart Product Recommendation & Matching App
 
 ## 📖 Overview
