@@ -11,7 +11,7 @@ if NGROK_AUTHTOKEN.startswith("<"):
 conf.get_default().auth_token = NGROK_AUTHTOKEN
 
 # kill prior streamlit (if any)
-!pkill -f streamlit || true
+pkill -f streamlit || true
 
 # start streamlit app in background and capture log
 logfile = "/content/streamlit_log.txt"
