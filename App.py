@@ -1,52 +1,18 @@
 %%writefile app.py
 import streamlit as st
-from PIL import Image
-import numpy as np
 import json
-import torch
-from torchvision import models, transforms
-import os
+import re
+from PIL import Image
+import requests
+from io import BytesIO
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="🧠 Visual Product Matcher", layout="centered", page_icon="🛍️")
 
 # ---------- LOAD DATA ----------
+# Make sure products.json is in the same repo as app.py
 with open("products.json", "r") as f:
     products = json.load(f)
-
-# Precompute feature vectors for products
-# products.json should have 'image' field (URL/local path) and 'name' etc.
-
-# ---------- IMAGE MODEL ----------
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = models.resnet18(pretrained=True)
-model.fc = torch.nn.Identity()  # remove final classification layer
-model = model.to(device)
-model.eval()
-
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225])
-])
-
-def extract_features(image):
-    img = transform(image).unsqueeze(0).to(device)
-    with torch.no_grad():
-        feat = model(img).cpu().numpy()[0]
-    return feat / np.linalg.norm(feat)
-
-# Precompute product features once
-if "features" not in st.session_state:
-    st.session_state["features"] = []
-    for p in products:
-        try:
-            img = Image.open(p['image']).convert('RGB')
-            feat = extract_features(img)
-            st.session_state["features"].append(feat)
-        except:
-            st.session_state["features"].append(np.zeros(512))  # fallback
 
 # ---------- STYLING ----------
 st.markdown("""
@@ -84,40 +50,54 @@ h1{text-align:center;color:#333;}
 </style>
 """, unsafe_allow_html=True)
 
+# ---------- UTILITIES ----------
+def extract_keywords(text):
+    """Extract keywords from filename or URL."""
+    name = re.split(r'[./_?=&-]+', text.split('/')[-1].lower())
+    return [w for w in name if w and w.isalnum()]
+
+def search_products(keywords):
+    results = []
+    for p in products:
+        match_count = sum(any(k in t.lower() for t in p["tags"]) for k in keywords)
+        if match_count > 0:
+            p["score"] = match_count
+            results.append(p)
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results
+
 # ---------- MAIN UI ----------
 st.title("🛍️ Visual Product Matcher")
-st.markdown("Upload an image or paste a URL to find visually similar products based on actual visual features.")
+st.markdown("Upload an image or paste a URL to find visually similar products based on keywords in the file name or URL.")
 
 col1, col2 = st.columns(2)
-query_image = None
+query = None
 
 with col1:
     st.subheader("📁 Upload an Image")
     uploaded_file = st.file_uploader("Choose an image", type=["jpg","jpeg","png"])
     if uploaded_file:
-        query_image = Image.open(uploaded_file).convert('RGB')
-        st.image(query_image, width=200, caption="Uploaded Preview")
+        st.image(uploaded_file, width=200, caption="Uploaded Preview")
+        query = uploaded_file.name
 
 with col2:
     st.subheader("🌐 Or Paste Image URL")
     url_input = st.text_input("Enter image URL")
     if url_input:
         try:
-            query_image = Image.open(requests.get(url_input, stream=True).raw).convert('RGB')
-            st.image(query_image, width=200, caption="URL Preview")
+            # Verify URL is an image
+            response = requests.get(url_input)
+            img = Image.open(BytesIO(response.content))
+            st.image(img, width=200, caption="URL Preview")
+            query = url_input
         except:
             st.warning("Unable to load image from URL")
 
-def find_similar(query_img, top_n=5):
-    q_feat = extract_features(query_img)
-    dists = [np.linalg.norm(q_feat - f) for f in st.session_state["features"]]
-    idxs = np.argsort(dists)[:top_n]
-    return [products[i] for i in idxs]
-
-if query_image:
+if query:
     if st.button("🔍 Search Similar Products"):
         st.info("Searching for similar items...")
-        results = find_similar(query_image, top_n=5)
+        keywords = extract_keywords(query)
+        results = search_products(keywords)
 
         if results:
             st.subheader("🛒 Matching Products")
