@@ -8,10 +8,16 @@ from io import BytesIO
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="🧠 Visual Product Matcher", layout="centered", page_icon="🛍️")
 
-# ---------- LOAD DATA ----------
-# Make sure products.json is in the same repo as app.py
-with open("products.json", "r") as f:
-    products = json.load(f)
+# ---------- LOAD DATA WITH ERROR HANDLING ----------
+try:
+    with open("products.json", "r") as f:
+        products = json.load(f)
+except FileNotFoundError:
+    st.error("❌ products.json not found! Make sure it is in the same folder as app.py.")
+    st.stop()
+except json.JSONDecodeError:
+    st.error("❌ products.json is not a valid JSON file. Check the format.")
+    st.stop()
 
 # ---------- STYLING ----------
 st.markdown("""
@@ -58,7 +64,7 @@ def extract_keywords(text):
 def search_products(keywords):
     results = []
     for p in products:
-        match_count = sum(any(k in t.lower() for t in p["tags"]) for k in keywords)
+        match_count = sum(any(k in t.lower() for t in p.get("tags", [])) for k in keywords)
         if match_count > 0:
             p["score"] = match_count
             results.append(p)
@@ -71,12 +77,14 @@ st.markdown("Upload an image or paste a URL to find visually similar products ba
 
 col1, col2 = st.columns(2)
 query = None
+query_image = None
 
 with col1:
     st.subheader("📁 Upload an Image")
     uploaded_file = st.file_uploader("Choose an image", type=["jpg","jpeg","png"])
     if uploaded_file:
-        st.image(uploaded_file, width=200, caption="Uploaded Preview")
+        query_image = Image.open(uploaded_file).convert("RGB")
+        st.image(query_image, width=200, caption="Uploaded Preview")
         query = uploaded_file.name
 
 with col2:
@@ -84,13 +92,12 @@ with col2:
     url_input = st.text_input("Enter image URL")
     if url_input:
         try:
-            # Verify URL is an image
             response = requests.get(url_input)
-            img = Image.open(BytesIO(response.content))
-            st.image(img, width=200, caption="URL Preview")
+            query_image = Image.open(BytesIO(response.content)).convert("RGB")
+            st.image(query_image, width=200, caption="URL Preview")
             query = url_input
         except:
-            st.warning("Unable to load image from URL")
+            st.warning("⚠️ Unable to load image from URL. Please check the link.")
 
 if query:
     if st.button("🔍 Search Similar Products"):
@@ -104,10 +111,10 @@ if query:
             for p in results:
                 st.markdown(f"""
                 <div class="product-card">
-                  <img src="{p['image']}" alt="{p['name']}"/>
-                  <p><b>{p['name']}</b></p>
-                  <p>{", ".join(p['tags'])}</p>
-                  <p style="color:green;"><b>{p['price']}</b></p>
+                  <img src="{p.get('image', '')}" alt="{p.get('name','')}"/>
+                  <p><b>{p.get('name','')}</b></p>
+                  <p>{", ".join(p.get('tags', []))}</p>
+                  <p style="color:green;"><b>{p.get('price','')}</b></p>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
