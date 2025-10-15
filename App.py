@@ -10,7 +10,7 @@ st.title("Visual Product Matching")
 st.write("Upload an image or provide an image URL to find visually similar products.")
 
 # Choice: Upload or URL
-input_type = st.radio("Choose input method:", ("Upload Image", "Image URL"))
+input_type = st.radio("Choose input method:", ("Image URL"))
 
 image = None
 
