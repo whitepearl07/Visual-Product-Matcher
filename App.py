@@ -1,20 +1,36 @@
+# app.py
 import streamlit as st
 from PIL import Image
-import os
+import requests
+from io import BytesIO
 
 st.set_page_config(page_title="Visual Product Matching", page_icon="🛍️", layout="centered")
 
 st.title("Visual Product Matching")
-st.write("Upload an image, and this app will find visually similar products.")
+st.write("Upload an image or provide an image URL to find visually similar products.")
 
-# Upload image
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+# Choice: Upload or URL
+input_type = st.radio("Choose input method:", ("Upload Image", "Image URL"))
 
-if uploaded_file:
-    # Display uploaded image
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+image = None
 
+if input_type == "Upload Image":
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+    if uploaded_file:
+        image = Image.open(uploaded_file)
+elif input_type == "Image URL":
+    image_url = st.text_input("Enter image URL:")
+    if image_url:
+        try:
+            response = requests.get(image_url)
+            image = Image.open(BytesIO(response.content))
+        except Exception as e:
+            st.error("Unable to load image from URL. Please check the URL.")
+
+# Display image and placeholder matching results
+if image:
+    st.image(image, caption="Input Image", use_column_width=True)
+    
     # TODO: Add your visual product matching logic here
     st.write("Searching for similar products...")
 
