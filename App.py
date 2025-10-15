@@ -14,11 +14,7 @@ input_type = st.radio("Choose input method:", ("Upload Image", "Image URL"))
 
 image = None
 
-if input_type == "Upload Image":
-    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-    if uploaded_file:
-        image = Image.open(uploaded_file)
-elif input_type == "Image URL":
+if input_type == "Image URL":
     image_url = st.text_input("Enter image URL:")
     if image_url:
         try:
